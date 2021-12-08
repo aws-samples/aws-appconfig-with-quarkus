@@ -1,6 +1,6 @@
 # Using AWS AppConfig in a custom MicroProfile ConfigSource
 
-This repository shows how to natively extend Quarkus with a custom ConfigSource to use AWS AppConfig values when injecting configproperties with @ConfigProperty.
+This repository shows how to natively extend Quarkus with a custom ConfigSource to use AWS AppConfig values when injecting config properties with @ConfigProperty.
 
 This means that a developer can reference AppConfig properties like this:
 
@@ -21,7 +21,7 @@ To achieve this we create a class which implements `org.eclipse.microprofile.con
 
 Navigate to [com.amazon.config.source.AwsAppConfigSource.java](src/main/java/com/amazon/config/source/AwsAppConfigSource.java) learn what each overridden method accomplishes in context of the actual code.
 
-**Important:** The RESTEasy implementation used by Quarkus scopes the lifecycle of JAX-RS resource classes (those annotaed with `@Path`) to application scoped instead of the default request scoped outlined in the JAX-RS spec. This would effectively prevent us from rolling out new config values and directly use them in a running Quarkus application, as the resource class s only instantiated once. To circumvent this we wrap our ConfigProperty variable in a `javax.inject.Provider` and call `javax.inject.Provider#get()` each time to fetch the current, up-to-date value as stored in the ConfigSource.  
+**Important:** The RESTEasy implementation used by Quarkus scopes the lifecycle of JAX-RS resource classes (those annotated with `@Path`) to application scoped instead of the default request scoped outlined in the JAX-RS spec. This would effectively prevent us from rolling out new config values and directly use them in a running Quarkus application, as the resource class s only instantiated once. To circumvent this we wrap our ConfigProperty variable in a `javax.inject.Provider` and call `javax.inject.Provider#get()` each time to fetch the current, up-to-date value as stored in the ConfigSource.  
 
 ## The sample use case
 
@@ -29,7 +29,7 @@ Create an AWS AppConfig sample environment. Testing works best with the predefin
 
 ## Testing the example
 
-Firstly, setup the AWS AppConfig test environment from the CDK app. Next ensure you have your local environment configured with a AWS credentials which allow interactions with AWS AppConfig.
+Firstly, setup the AWS AppConfig test environment from the CDK app. **This is required as Quarkus will execute the ConfigSource code during build augmentation.** Next ensure you have your local environment configured with a AWS credentials which allow interactions with AWS AppConfig.
 
 Run the application locally:
 ```bash
