@@ -15,7 +15,7 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package com.amazon.config.source;
+package com.amazon.sample.appconfig.quarkus.config.source;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.slf4j.Logger;

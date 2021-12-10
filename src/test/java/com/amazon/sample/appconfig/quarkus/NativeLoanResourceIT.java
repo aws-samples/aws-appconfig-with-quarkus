@@ -15,16 +15,12 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package com.amazon;
+package com.amazon.sample.appconfig.quarkus;
 
-public class LoanCalculationResponse {
-    double annuity;
+import io.quarkus.test.junit.NativeImageTest;
 
-    public double getAnnuity() {
-        return annuity;
-    }
+@NativeImageTest
+public class NativeLoanResourceIT extends LoanResourceTest {
 
-    public void setAnnuity(double annuity) {
-        this.annuity = annuity;
-    }
+  // Execute the same tests but in native mode.
 }

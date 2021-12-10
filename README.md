@@ -19,7 +19,7 @@ The demonstrated approach has several benefits:
 
 To achieve this we create a class which implements `org.eclipse.microprofile.config.spi.ConfigSource` and register this clas in `META-INF/services/org.eclipse.microprofile.config.spi.ConfigSource`. In the implementation of the class we periodically pull for new ConfigurationVersions using the AWS SDK for Java v2. If we receive a new configuration, the new configuration is read and the new values to properties are applied. 
 
-Navigate to [com.amazon.config.source.AwsAppConfigSource.java](src/main/java/com/amazon/config/source/AwsAppConfigSource.java) learn what each overridden method accomplishes in context of the actual code.
+Navigate to [AwsAppConfigSource.java](src/main/java/com/amazon/sample/appconfig/quarkus/sample/appconfig/quarkus/config/source/AwsAppConfigSource.java) learn what each overridden method accomplishes in context of the actual code.
 
 **Important:** The RESTEasy implementation used by Quarkus scopes the lifecycle of JAX-RS resource classes (those annotated with `@Path`) to application scoped instead of the default request scoped outlined in the JAX-RS spec. This would effectively prevent us from rolling out new config values and directly use them in a running Quarkus application, as the resource class s only instantiated once. To circumvent this we wrap our ConfigProperty variable in a `javax.inject.Provider` and call `javax.inject.Provider#get()` each time to fetch the current, up-to-date value as stored in the ConfigSource.  
 

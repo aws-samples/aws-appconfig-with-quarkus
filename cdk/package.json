@@ -1,6 +1,7 @@
 {
   "name": "cdk",
   "version": "0.1.0",
+  "license" : "MIT-0",
   "bin": {
     "cdk": "bin/app-config-app.js"
   },
