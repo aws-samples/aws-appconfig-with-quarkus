@@ -20,13 +20,18 @@ package com.amazon.sample.appconfig.quarkus.config.source;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import software.amazon.awssdk.services.appconfig.AppConfigClient;
+import software.amazon.awssdk.services.appconfigdata.AppConfigDataClient;
 
 import javax.json.Json;
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 public class AwsAppConfigSource implements ConfigSource {
 
@@ -42,9 +47,9 @@ public class AwsAppConfigSource implements ConfigSource {
 
   private ConcurrentHashMap<String, String> props;
 
-  private AppConfigClient client;
+  private AppConfigDataClient dataClient;
   private UUID clientId;
-  private String lastConfigVersion = null;
+  private String token = null;
 
   private ScheduledExecutorService execSvc;
 
@@ -53,7 +58,7 @@ public class AwsAppConfigSource implements ConfigSource {
     clientId = UUID.randomUUID();
 
     try {
-      client = AppConfigClient.builder().build();
+      dataClient = AppConfigDataClient.builder().build();
     } catch (Exception ex) {
       // Quarkus plugin runs this code path if you run ./mvnw package.
       // Hence we need to account for the probability the no AWS credentials can be obtained
@@ -66,6 +71,8 @@ public class AwsAppConfigSource implements ConfigSource {
 
     execSvc = new ScheduledThreadPoolExecutor(1);
 
+    token = startConfigurationSession();
+    LOGGER.info("fetched initialConfigToken");
     fetchConfig();
     LOGGER.info("initialized with AppConfig provided interestRate = {}", props.get("interestRate"));
 
@@ -73,35 +80,47 @@ public class AwsAppConfigSource implements ConfigSource {
     execSvc.scheduleAtFixedRate(this::fetchConfig, 30, 30, TimeUnit.SECONDS);
   }
 
+  private String startConfigurationSession() {
+    var applicationId = System.getenv("APP_ID");
+    var environmentId = System.getenv("ENV_ID");
+    var configProfileId = System.getenv("CONFIG_PROFILE_ID");
+
+    var res =
+        dataClient.startConfigurationSession(
+            req -> {
+              req.applicationIdentifier(applicationId);
+              req.environmentIdentifier(environmentId);
+              req.configurationProfileIdentifier(configProfileId);
+
+              req.requiredMinimumPollIntervalInSeconds(20);
+            });
+
+    return res.initialConfigurationToken();
+  }
+
   private void fetchConfig() {
     var res =
-        client.getConfiguration(
+        dataClient.getLatestConfiguration(
             req -> {
-              req.application("ConfigSourceDemo");
-              req.environment("Sandbox");
-              req.configuration("json-profile");
-              req.clientId(clientId.toString());
-
-              req.clientConfigurationVersion(lastConfigVersion);
+              req.configurationToken(token);
             });
 
     try {
-      if (res.configurationVersion().equals(lastConfigVersion)) {
-        // we have no new content delivered
-        LOGGER.debug("still on config version = {}", lastConfigVersion);
+      var configString = res.configuration().asUtf8String();
+      if(configString.isEmpty()) {
+        LOGGER.info("received empty config");
         return;
       }
-      var parser = Json.createParser(res.content().asInputStream());
       var rate =
-          Json.createReader(res.content().asInputStream())
+          Json.createReader(new ByteArrayInputStream(configString.getBytes(StandardCharsets.UTF_8)))
               .readObject()
               .getJsonNumber("interestRate")
               .toString();
 
       props.put("interestRate", rate);
-      lastConfigVersion = res.configurationVersion();
+      token = res.nextPollConfigurationToken();
 
-      LOGGER.debug("now using config version = {}", lastConfigVersion);
+      LOGGER.debug("now using config version = {}\nand interestRate = {}", token, props.get("interestRate"));
     } catch (Exception ex) {
       LOGGER.error("unexpected failure in reading the config", ex);
       return;
