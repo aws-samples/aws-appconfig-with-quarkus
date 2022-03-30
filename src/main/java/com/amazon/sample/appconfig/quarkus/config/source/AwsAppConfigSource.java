@@ -17,23 +17,21 @@
  */
 package com.amazon.sample.appconfig.quarkus.config.source;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.appconfigdata.AppConfigDataClient;
 
-import javax.json.Json;
-import java.io.ByteArrayInputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-public class AwsAppConfigSource implements ConfigSource {
+public class AwsAppConfigSource implements ConfigSource, AutoCloseable {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AwsAppConfigSource.class);
 
@@ -46,16 +44,18 @@ public class AwsAppConfigSource implements ConfigSource {
   private static final int ORDINAL = 275;
 
   private ConcurrentHashMap<String, String> props;
+  private final ObjectMapper mapper;
+  private final TypeReference<ConcurrentHashMap<String, String>> typeRef;
 
   private AppConfigDataClient dataClient;
-  private UUID clientId;
   private String token = null;
 
   private ScheduledExecutorService execSvc;
 
   public AwsAppConfigSource() {
-    props = new ConcurrentHashMap();
-    clientId = UUID.randomUUID();
+    props = new ConcurrentHashMap<>();
+    mapper = new ObjectMapper();
+    typeRef = new TypeReference<>() {};
 
     try {
       dataClient = AppConfigDataClient.builder().build();
@@ -81,9 +81,9 @@ public class AwsAppConfigSource implements ConfigSource {
   }
 
   private String startConfigurationSession() {
-    var applicationId = System.getenv("APP_ID");
-    var environmentId = System.getenv("ENV_ID");
-    var configProfileId = System.getenv("CONFIG_PROFILE_ID");
+    var applicationId = "ConfigSourceDemo";
+    var environmentId = "Sandbox";
+    var configProfileId = "json-profile";
 
     var res =
         dataClient.startConfigurationSession(
@@ -91,39 +91,34 @@ public class AwsAppConfigSource implements ConfigSource {
               req.applicationIdentifier(applicationId);
               req.environmentIdentifier(environmentId);
               req.configurationProfileIdentifier(configProfileId);
-
-              req.requiredMinimumPollIntervalInSeconds(20);
             });
 
     return res.initialConfigurationToken();
   }
 
   private void fetchConfig() {
-    var res =
-        dataClient.getLatestConfiguration(
-            req -> {
-              req.configurationToken(token);
-            });
+    var res = dataClient.getLatestConfiguration(req -> req.configurationToken(token));
 
     try {
+      if (res.configuration() == null) {
+        LOGGER.info("unexpected null value for configuration. aborting config update");
+        return;
+      }
+
       var configString = res.configuration().asUtf8String();
-      if(configString.isEmpty()) {
+      if (configString.isEmpty()) {
         LOGGER.info("received empty config");
         return;
       }
-      var rate =
-          Json.createReader(new ByteArrayInputStream(configString.getBytes(StandardCharsets.UTF_8)))
-              .readObject()
-              .getJsonNumber("interestRate")
-              .toString();
 
-      props.put("interestRate", rate);
+      props = mapper.readValue(configString, typeRef);
+
       token = res.nextPollConfigurationToken();
 
-      LOGGER.debug("now using config version = {}\nand interestRate = {}", token, props.get("interestRate"));
+      LOGGER.debug(
+          "now using config version = {}\nand interestRate = {}", token, props.get("interestRate"));
     } catch (Exception ex) {
       LOGGER.error("unexpected failure in reading the config", ex);
-      return;
     }
   }
 
@@ -150,5 +145,10 @@ public class AwsAppConfigSource implements ConfigSource {
   @Override
   public String getName() {
     return "AwsAppConfigSource";
+  }
+
+  @Override
+  public void close() throws Exception {
+    execSvc.shutdown();
   }
 }

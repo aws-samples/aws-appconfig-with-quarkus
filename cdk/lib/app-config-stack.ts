@@ -52,20 +52,5 @@ export class AppConfigStack extends cdk.Stack {
       configurationVersion: config.ref,
       environmentId: env.ref
     });
-
-    new cdk.CfnOutput(this, "appId", {
-      exportName: "appId",
-      value: app.ref
-    });
-
-    new cdk.CfnOutput(this, "envId", {
-      exportName: "envId",
-      value: env.ref
-    });
-
-    new cdk.CfnOutput(this, "configProfileId", {
-      exportName: "configProfileId",
-      value: plainJsonProfile.ref
-    });
   }
 }
