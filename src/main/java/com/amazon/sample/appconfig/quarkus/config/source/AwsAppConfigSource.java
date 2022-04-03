@@ -81,16 +81,16 @@ public class AwsAppConfigSource implements ConfigSource, AutoCloseable {
   }
 
   private String startConfigurationSession() {
-    var applicationId = "ConfigSourceDemo";
-    var environmentId = "Sandbox";
-    var configProfileId = "json-profile";
+    var applicationName = "ConfigSourceDemo";
+    var environmentName = "Sandbox";
+    var configProfileName = "json-profile";
 
     var res =
         dataClient.startConfigurationSession(
             req -> {
-              req.applicationIdentifier(applicationId);
-              req.environmentIdentifier(environmentId);
-              req.configurationProfileIdentifier(configProfileId);
+              req.applicationIdentifier(applicationName);
+              req.environmentIdentifier(environmentName);
+              req.configurationProfileIdentifier(configProfileName);
             });
 
     return res.initialConfigurationToken();
