@@ -29,19 +29,14 @@ Create an AWS AppConfig sample environment. Testing works best with the predefin
 
 ## Testing the example
 
-Firstly, setup the AWS AppConfig test environment from the CDK app. **This is required as Quarkus will execute the ConfigSource code during build augmentation.** Next ensure you have your local environment configured with a AWS credentials which allow interactions with AWS AppConfig.
+Firstly, setup the AWS AppConfig test environment from the CDK app. **This is required as Quarkus will execute the ConfigSource code during build augmentation.** Next ensure you have your local environment configured with a AWS credentials which allow interactions with AWS AppConfig. Also ensure Maven (`mvn`) is on your path or install maven wrapper. 
 
-Secondly, be sure to set the following env vars based on the three Cfn outputs from the CDK app:
-```bash
-export APP_ID=<cfn output 'appId' goes here>
-export ENV_ID=<cfn output 'envId' goes here>
-export CONFIG_PROFILE_ID=<cfn output 'configProfileId' goes here>
-```
+Be aware that the sample source code relies on hardcoded AWS resource names and is tied to the provided CDK app!
 
 Run the application locally:
 ```bash
-./mvnw clean package
-java -jar target/appconfig-quarkus-1.0-SNAPSHOT.jar 
+mvn clean package
+java -jar target/quarkus-app/quarkus-run.jar 
 ```
 
 You will see rather verbose log output which enables you to inspect what the sample application is doing.

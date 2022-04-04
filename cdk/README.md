@@ -25,6 +25,7 @@ Each time you run `cdk deploy` the HostedConfigurationVersion resource (on line 
 
 ## Useful commands
 
+ * `npm install`     install node modules
  * `npm run build`   compile typescript to js
  * `npm run watch`   watch for changes and compile
  * `npm run test`    perform the jest unit tests
