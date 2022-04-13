@@ -107,7 +107,7 @@ public class AwsAppConfigSource implements ConfigSource, AutoCloseable {
 
       var configString = res.configuration().asUtf8String();
       if (configString.isEmpty()) {
-        LOGGER.info("received empty config");
+        LOGGER.info("No changes on the configuration received");
         return;
       }
 
